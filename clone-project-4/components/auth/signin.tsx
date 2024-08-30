@@ -1,9 +1,39 @@
 import { Button, Input } from "@material-tailwind/react";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { createBrowserSupabaseClient } from "../../utils/supabase/client";
 
 export default function SignIn({ setView }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const supabase = createBrowserSupabaseClient();
+  const signinMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (data) {
+        console.log(data);
+      }
+
+      if (error) {
+        alert(error.message);
+      }
+    },
+  });
+
+  const signInWithKakao = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: {
+        redirectTo: process.env.NEXT_PUBLIC_VERCEL_URL
+          ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/auth/callback`
+          : "http://localhost:3000/auth/callback",
+      },
+    });
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -25,12 +55,20 @@ export default function SignIn({ setView }) {
         />
         <Button
           onClick={() => {
-            console.log("signin");
+            signinMutation.mutate();
           }}
+          disabled={signinMutation.isPending}
+          loading={signinMutation.isPending}
           color="light-blue"
           className="w-full text-md py-1"
         >
           로그인
+        </Button>
+        <Button
+          onClick={() => signInWithKakao()}
+          className="w-full text-md py-1 bg-yellow-700"
+        >
+          카카오 로그인
         </Button>
       </div>
 
